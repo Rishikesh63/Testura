@@ -1,32 +1,36 @@
-name: TestPilot — AI Test Runner
+name: Testura — AI Test Runner
 description: Auto-generate and run AI tests on every push
 
 inputs:
   api_url:
-    description: Your TestPilot API URL
+    description: Your Testura API URL
     required: true
   api_key:
-    description: Your TestPilot API key
+    description: Your Testura API key
     required: true
   repo_id:
-    description: Your TestPilot repo ID
+    description: Your Testura repo ID
     required: true
 
 outputs:
   tests_passed:
     description: Number of tests passed
+    value: ${{ steps.run.outputs.tests_passed }}
   tests_total:
     description: Total tests run
+    value: ${{ steps.run.outputs.tests_total }}
   pass_rate:
     description: Pass rate percentage
+    value: ${{ steps.run.outputs.pass_rate }}
 
 runs:
   using: composite
   steps:
-    - name: Trigger TestPilot run
+    - name: Trigger Testura run
+      id: run
       shell: bash
       run: |
-        echo "Triggering TestPilot test run..."
+        echo "Triggering Testura test run..."
         RESPONSE=$(curl -s -X POST "${{ inputs.api_url }}/repos/${{ inputs.repo_id }}/runs" \
           -H "Authorization: Bearer ${{ inputs.api_key }}" \
           -H "Content-Type: application/json")
@@ -42,9 +46,11 @@ runs:
           if [ "$STATUS" != "running" ]; then
             PASSED=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin)['tests_passed'])")
             TOTAL=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin)['tests_total'])")
+            RATE=$(( PASSED * 100 / TOTAL ))
             echo "tests_passed=$PASSED" >> $GITHUB_OUTPUT
             echo "tests_total=$TOTAL" >> $GITHUB_OUTPUT
-            echo "TestPilot: $PASSED/$TOTAL tests passed"
+            echo "pass_rate=$RATE" >> $GITHUB_OUTPUT
+            echo "Testura: $PASSED/$TOTAL tests passed ($RATE%)"
             if [ "$STATUS" = "failed" ]; then exit 1; fi
             break
           fi

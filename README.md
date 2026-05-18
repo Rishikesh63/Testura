@@ -1,4 +1,4 @@
-# TestPilot — AI Testing for Vibe-Coded Apps
+# Testura — AI Testing for Vibe-Coded Apps
 
 Connect your GitHub repo. AI writes and runs tests automatically. Zero manual work.
 
@@ -12,7 +12,7 @@ Connect your GitHub repo. AI writes and runs tests automatically. Zero manual wo
 
 ## Project Structure
 ```
-agentic-testing/
+Testura/
 ├── frontend/          # Next.js app
 ├── backend/           # FastAPI API server
 │   ├── app/
@@ -120,11 +120,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: your-username/testpilot-action@v1
+      - uses: your-username/testura-action@v1
         with:
           api_url: https://your-api.railway.app
-          api_key: ${{ secrets.TESTPILOT_API_KEY }}
-          repo_id: ${{ secrets.TESTPILOT_REPO_ID }}
+          api_key: ${{ secrets.TESTURA_API_KEY }}
+          repo_id: ${{ secrets.TESTURA_REPO_ID }}
 ```
 
 ## Pricing

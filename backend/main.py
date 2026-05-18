@@ -4,7 +4,7 @@ from app.api import repos, tests, webhooks
 from app.core.config import settings
 
 app = FastAPI(
-    title="TestPilot API",
+    title="Testura API",
     description="Agentic testing for AI-generated code",
     version="0.1.0",
 )
