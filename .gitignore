@@ -1,0 +1,18 @@
+# Environment files — never commit these
+.env
+.env.local
+.env.production
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp repo clones
+/tmp/repos/
