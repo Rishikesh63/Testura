@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.core.analyzer import analyze_repo
 from app.core.generator import generate_tests_for_file, generate_fix_suggestion
@@ -8,6 +9,8 @@ from supabase import create_client
 from pathlib import Path
 import uuid
 import time
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/repos", tags=["tests"])
 
@@ -76,6 +79,7 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
                   result["tests_total"], duration, enriched)
 
     except Exception as e:
+        logger.error("Pipeline failed for run %s: %s", run_id, e, exc_info=True)
         duration = int((time.time() - start) * 1000)
         _mark_run(run_id, repo_id, "failed", 0, 0, 0, duration, [])
 

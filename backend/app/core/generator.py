@@ -1,8 +1,26 @@
-import anthropic
+from openai import OpenAI
 from app.core.config import settings
 from typing import Any
 
-client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+_client: OpenAI | None = None
+
+def _get_client() -> OpenAI:
+    global _client
+    if _client is not None:
+        return _client
+    if settings.groq_api_key:
+        _client = OpenAI(
+            api_key=settings.groq_api_key,
+            base_url="https://api.groq.com/openai/v1",
+        )
+    else:
+        raise RuntimeError("GROQ_API_KEY is not set in .env")
+    return _client
+
+
+def _model() -> str:
+    return "llama-3.3-70b-versatile"
+
 
 SYSTEM_PROMPT = """You are an expert software testing engineer.
 Given a code file and its symbol map, generate comprehensive tests.
@@ -16,7 +34,6 @@ Rules:
 
 
 def generate_tests_for_file(file_info: dict[str, Any], source_code: str) -> str:
-    """Call Claude to generate tests for a single file."""
     lang = file_info["language"]
     path = file_info["path"]
     symbols = file_info["symbols"]
@@ -43,15 +60,16 @@ Source code (truncated to 3000 chars):
 
 Generate a complete test file for this code."""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    response = _get_client().chat.completions.create(
+        model=_model(),
         max_tokens=2048,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
     )
 
-    raw = message.content[0].text.strip()
-    # Strip markdown code fences if present
+    raw = response.choices[0].message.content.strip()
     if raw.startswith("```"):
         lines = raw.split("\n")
         raw = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
@@ -59,7 +77,6 @@ Generate a complete test file for this code."""
 
 
 def generate_fix_suggestion(test_name: str, error_message: str, source_snippet: str) -> str:
-    """Ask Claude why a test failed and how to fix the underlying code."""
     prompt = f"""A test failed:
 Test: {test_name}
 Error:
@@ -72,9 +89,9 @@ Relevant source code:
 
 In 2-3 sentences, explain why this test failed and what change would fix it."""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    response = _get_client().chat.completions.create(
+        model=_model(),
         max_tokens=300,
         messages=[{"role": "user", "content": prompt}],
     )
-    return message.content[0].text.strip()
+    return response.choices[0].message.content.strip()

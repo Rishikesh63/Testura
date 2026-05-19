@@ -1,17 +1,23 @@
-import os
 import shutil
+import stat
 from pathlib import Path
 import git
 from app.core.config import settings
 
 
+def _force_remove_readonly(func, path, _):
+    """Allow rmtree to delete read-only files (common with .git on Windows)."""
+    Path(path).chmod(stat.S_IWRITE)
+    func(path)
+
+
 def clone_repo(repo_url: str, repo_id: str) -> str:
-    dest = os.path.join(settings.repos_base_path, repo_id)
-    if os.path.exists(dest):
-        shutil.rmtree(dest)
-    os.makedirs(dest, exist_ok=True)
-    git.Repo.clone_from(repo_url, dest, depth=1)
-    return dest
+    dest = Path(settings.repos_base_path) / repo_id
+    if dest.exists():
+        shutil.rmtree(dest, onerror=_force_remove_readonly)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    git.Repo.clone_from(repo_url, str(dest), depth=1)
+    return str(dest)
 
 
 def pull_repo(repo_path: str) -> None:
@@ -20,8 +26,8 @@ def pull_repo(repo_path: str) -> None:
 
 
 def cleanup_repo(repo_id: str) -> None:
-    dest = os.path.join(settings.repos_base_path, repo_id)
-    if os.path.exists(dest):
+    dest = Path(settings.repos_base_path) / repo_id
+    if dest.exists():
         shutil.rmtree(dest)
 
 
