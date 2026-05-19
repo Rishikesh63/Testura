@@ -1,9 +1,27 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+let _client: SupabaseClient | null = null;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export function getSupabase(): SupabaseClient {
+  if (!_client) {
+    _client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }
+  return _client;
+}
+
+// Convenience alias used across the app
+export const supabase = {
+  auth: {
+    getSession: () => getSupabase().auth.getSession(),
+    signInWithOAuth: (opts: Parameters<SupabaseClient["auth"]["signInWithOAuth"]>[0]) =>
+      getSupabase().auth.signInWithOAuth(opts),
+    signOut: () => getSupabase().auth.signOut(),
+  },
+  table: (name: string) => getSupabase().from(name),
+};
 
 export async function getSession() {
   const { data } = await supabase.auth.getSession();

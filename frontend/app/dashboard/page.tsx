@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,7 +31,7 @@ export default function Dashboard() {
   const [runningRepoId, setRunningRepoId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: unknown } }) => {
       if (!data.session) router.push("/");
     });
     fetchRepos();
@@ -98,7 +99,7 @@ export default function Dashboard() {
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 font-bold text-xl">
           <Zap className="text-blue-600" size={20} />
-          TestPilot
+          Testura
         </div>
         <button
           onClick={() => signOut().then(() => router.push("/"))}

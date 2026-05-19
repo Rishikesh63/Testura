@@ -1,7 +1,7 @@
 "use client";
 
 import { signInWithGitHub } from "@/lib/supabase";
-import { Github, Zap, ShieldCheck, GitBranch, BarChart3, ArrowRight, CheckCircle } from "lucide-react";
+import { Github, Zap, ShieldCheck, BarChart3, ArrowRight, CheckCircle } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -10,7 +10,7 @@ export default function LandingPage() {
       <nav className="border-b px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
         <div className="flex items-center gap-2 font-bold text-xl">
           <Zap className="text-blue-600" size={22} />
-          TestPilot
+          Testura
         </div>
         <div className="flex items-center gap-6 text-sm text-gray-600">
           <a href="#how-it-works" className="hover:text-gray-900">How it works</a>
@@ -33,7 +33,7 @@ export default function LandingPage() {
           AI writes and runs tests<br />for your code. Automatically.
         </h1>
         <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
-          Connect your GitHub repo. TestPilot reads your code, generates tests,
+          Connect your GitHub repo. Testura reads your code, generates tests,
           runs them, and tells you what broke — zero manual work required.
         </p>
         <button
@@ -70,7 +70,7 @@ export default function LandingPage() {
               icon: <Github size={28} className="text-blue-600" />,
               step: "1",
               title: "Connect your repo",
-              desc: "Sign in with GitHub and select any repository. TestPilot clones it and reads your entire codebase.",
+              desc: "Sign in with GitHub and select any repository. Testura clones it and reads your entire codebase.",
             },
             {
               icon: <Zap size={28} className="text-blue-600" />,
@@ -158,7 +158,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t py-10 text-center text-sm text-gray-400">
         <div className="flex items-center justify-center gap-2 font-semibold text-gray-600 mb-2">
-          <Zap size={16} className="text-blue-600" /> TestPilot
+          <Zap size={16} className="text-blue-600" /> Testura
         </div>
         <p>AI-powered testing for the vibe coding era.</p>
       </footer>
