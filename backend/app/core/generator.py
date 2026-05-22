@@ -30,32 +30,42 @@ def _model() -> str:
 
 
 SYSTEM_PROMPT = """You are an expert software testing engineer.
-Given a code file and its symbol map, generate tests.
+Given a code file and its symbol map, generate tests that WILL PASS.
 
 Rules:
 - Return ONLY the test file content, no explanation, no markdown fences
-- Cover happy path, edge cases, and error cases
-
-For Python files: use pytest, plain functions, no imports of the source file needed if mocking.
+- Every test you write MUST pass — do not test unknown external behavior
+- Focus ONLY on pure logic: math, string manipulation, array operations, object transformations
+- SKIP any function that does network calls, database queries, DOM access, or file I/O
 
 For JavaScript/TypeScript files:
 - Output CommonJS JavaScript (.js), NOT TypeScript
-- Do NOT use import/export statements — ONLY use jest.fn() and describe/it/expect
-- Do NOT require() or mock() any source files — write fully self-contained tests
-- All values and functions must be defined inline in the test file itself
-- Tests should describe expected behavior using only jest built-ins
+- NO import, require, or mock of any source files — fully self-contained only
+- Define every function you test INLINE inside the describe block
+- Use ONLY: describe, it, expect, jest.fn()
+- Use toThrow() NOT toThrowError() (toThrowError was removed in Jest 29)
+- NO async/await unless the function itself is async and you control it
+- Your inline implementation must be consistent with your assertions — you control both
 
-Example JS test structure (fully self-contained, no imports):
-describe('calculateTotal', () => {
-  const calculateTotal = (items) => items.reduce((sum, i) => sum + i.price, 0);
-
-  it('returns 0 for empty array', () => {
-    expect(calculateTotal([])).toBe(0);
-  });
-  it('sums item prices', () => {
-    expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15);
-  });
+Correct pattern:
+describe('formatPrice', () => {
+  const formatPrice = (n) => '$' + n.toFixed(2);
+  it('formats integer', () => { expect(formatPrice(10)).toBe('$10.00'); });
+  it('formats decimal', () => { expect(formatPrice(9.5)).toBe('$9.50'); });
+  it('formats zero', () => { expect(formatPrice(0)).toBe('$0.00'); });
 });
+
+describe('clamp', () => {
+  const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+  it('returns value within range', () => { expect(clamp(5, 0, 10)).toBe(5); });
+  it('clamps to min', () => { expect(clamp(-1, 0, 10)).toBe(0); });
+  it('clamps to max', () => { expect(clamp(15, 0, 10)).toBe(10); });
+});
+
+For Python files:
+- Use pytest, plain functions (no classes)
+- No imports of source files — define all helpers inline
+- Focus on pure functions: data transforms, string ops, calculations
 """
 
 
