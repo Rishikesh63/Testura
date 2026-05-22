@@ -33,7 +33,7 @@ export async function signInWithGitHub() {
     provider: "github",
     options: {
       scopes: "repo read:user",
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${window.location.origin}/auth/callback`,
     },
   });
 }
