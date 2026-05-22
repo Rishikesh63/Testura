@@ -1,0 +1,40 @@
+# flyctl launch added from .gitignore
+# Environment
+**/.env
+**/.env.*
+!**/.env.example
+
+# Poetry
+**/.venv
+
+# Python
+**/__pycache__
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/.Python
+**/*.egg-info
+**/dist
+**/build
+**/.eggs
+**/venv
+**/.venv
+**/env
+**/pip-log.txt
+
+# Testing
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+**/.tox
+**/junit.xml
+**/test-results
+
+# Temp repo clones
+tmp/repos
+**/repos
+
+# flyctl launch added from .venv/.gitignore
+# created by virtualenv automatically
+.venv/**/*
+fly.toml
