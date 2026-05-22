@@ -64,6 +64,7 @@ async def get_repo(repo_id: str):
 
 @router.delete("/{repo_id}")
 async def delete_repo(repo_id: str):
+    supabase.table("test_runs").delete().eq("repo_id", repo_id).execute()
     supabase.table("repos").delete().eq("id", repo_id).execute()
     cleanup_repo(repo_id)
     return {"ok": True}

@@ -42,23 +42,29 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
     try:
         repo_path = clone_repo(repo_data["repo_url"], repo_id)
         language = repo_data.get("language") or detect_language(repo_path)
+        logger.info("Cloned repo to %s, language=%s", repo_path, language)
 
         analysis = analyze_repo(repo_path)
+        logger.info("Analysis: %d files with symbols", len(analysis["files"]))
 
         # Generate tests for each file
         test_files = []
-        for file_info in analysis["files"][:15]:  # cap at 15 files per run
+        for file_info in analysis["files"][:5]:  # cap at 5 files to conserve API tokens
+            logger.info("Generating tests for %s (%d symbols)", file_info["path"], len(file_info["symbols"]))
             source = Path(repo_path, file_info["path"]).read_text(encoding="utf-8", errors="ignore")
             test_content = generate_tests_for_file(file_info, source)
             if test_content:
                 test_path = _test_path(file_info["path"], language)
                 test_files.append({"path": test_path, "content": test_content})
 
+        logger.info("Generated %d test files", len(test_files))
         if not test_files:
             _mark_run(run_id, repo_id, "failed", 0, 0, 0, int((time.time() - start) * 1000), [])
             return
 
         result = run_tests(repo_path, test_files, language)
+        logger.info("=== JEST STDOUT: %s", result.get("raw_output", "")[:800])
+        logger.info("=== JEST RESULTS COUNT: %d", len(result.get("results", [])))
 
         # Generate fix suggestions for failed tests
         enriched = []
@@ -73,7 +79,7 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
             enriched.append(r)
 
         duration = int((time.time() - start) * 1000)
-        status = "passed" if result["tests_failed"] == 0 else "failed"
+        status = "passed" if result["tests_total"] > 0 and result["tests_failed"] == 0 else "failed"
         _mark_run(run_id, repo_id, status,
                   result["tests_passed"], result["tests_failed"],
                   result["tests_total"], duration, enriched)
@@ -119,5 +125,6 @@ async def get_run(repo_id: str, run_id: str):
 def _test_path(source_path: str, language: str) -> str:
     p = Path(source_path)
     if language == "python":
-        return str(p.parent / f"test_{p.name}")
-    return str(p.parent / f"{p.stem}.test{p.suffix}")
+        return str(p.parent / f"test_{p.stem}.py")
+    # Always .test.js (not .ts) — avoids needing TypeScript/babel transforms
+    return str(p.parent / f"{p.stem}.test.js")

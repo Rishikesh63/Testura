@@ -28,7 +28,7 @@ def pull_repo(repo_path: str) -> None:
 def cleanup_repo(repo_id: str) -> None:
     dest = Path(settings.repos_base_path) / repo_id
     if dest.exists():
-        shutil.rmtree(dest)
+        shutil.rmtree(dest, onerror=_force_remove_readonly)
 
 
 def detect_language(repo_path: str) -> str:

@@ -1,7 +1,10 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import repos, tests, webhooks
 from app.core.config import settings
+
+logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
 
 app = FastAPI(
     title="Testura API",

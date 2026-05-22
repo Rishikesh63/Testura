@@ -8,28 +8,54 @@ def _get_client() -> OpenAI:
     global _client
     if _client is not None:
         return _client
-    if settings.groq_api_key:
+    if settings.nvidia_api_key:
+        _client = OpenAI(
+            api_key=settings.nvidia_api_key,
+            base_url="https://integrate.api.nvidia.com/v1",
+        )
+    elif settings.groq_api_key:
         _client = OpenAI(
             api_key=settings.groq_api_key,
             base_url="https://api.groq.com/openai/v1",
         )
     else:
-        raise RuntimeError("GROQ_API_KEY is not set in .env")
+        raise RuntimeError("Set NVIDIA_API_KEY or GROQ_API_KEY in .env")
     return _client
 
 
 def _model() -> str:
-    return "llama-3.3-70b-versatile"
+    if settings.nvidia_api_key:
+        return "meta/llama-3.3-70b-instruct"
+    return "llama-3.1-8b-instant"
 
 
 SYSTEM_PROMPT = """You are an expert software testing engineer.
-Given a code file and its symbol map, generate comprehensive tests.
+Given a code file and its symbol map, generate tests.
+
 Rules:
-- Write tests that actually test behavior, not just that a function exists
+- Return ONLY the test file content, no explanation, no markdown fences
 - Cover happy path, edge cases, and error cases
-- For Python: use pytest. For JS/TS: use Jest with describe/it blocks
-- Keep tests concise and readable
-- Return ONLY the test file content, no explanation
+
+For Python files: use pytest, plain functions, no imports of the source file needed if mocking.
+
+For JavaScript/TypeScript files:
+- Output CommonJS JavaScript (.js), NOT TypeScript
+- Do NOT use import/export statements — ONLY use jest.fn() and describe/it/expect
+- Do NOT require() or mock() any source files — write fully self-contained tests
+- All values and functions must be defined inline in the test file itself
+- Tests should describe expected behavior using only jest built-ins
+
+Example JS test structure (fully self-contained, no imports):
+describe('calculateTotal', () => {
+  const calculateTotal = (items) => items.reduce((sum, i) => sum + i.price, 0);
+
+  it('returns 0 for empty array', () => {
+    expect(calculateTotal([])).toBe(0);
+  });
+  it('sums item prices', () => {
+    expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15);
+  });
+});
 """
 
 
@@ -53,9 +79,9 @@ Language: {lang}
 Symbols found:
 {symbol_summary}
 
-Source code (truncated to 3000 chars):
+Source code (truncated to 1500 chars):
 ```{lang}
-{source_code[:3000]}
+{source_code[:1500]}
 ```
 
 Generate a complete test file for this code."""

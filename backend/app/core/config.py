@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     supabase_service_key: str
     anthropic_api_key: Optional[str] = None
     groq_api_key: Optional[str] = None
+    nvidia_api_key: Optional[str] = None
     github_client_id: Optional[str] = None
     github_client_secret: Optional[str] = None
     stripe_secret_key: Optional[str] = None

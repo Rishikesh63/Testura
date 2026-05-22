@@ -73,9 +73,11 @@ export default function RepoDetail() {
       const { data } = await testApi.run(id);
       toast.success("Test run started");
       // Poll for results
+      let attempts = 0;
       const poll = setInterval(async () => {
+        attempts++;
         const { data: runData } = await testApi.getRun(id, data.run_id);
-        if (runData.status !== "running") {
+        if (runData.status !== "running" || attempts >= 40) {
           clearInterval(poll);
           fetchData();
           setRunning(false);
@@ -168,6 +170,15 @@ export default function RepoDetail() {
               </div>
 
               {/* Test results list */}
+              {selectedRun.results.length === 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 text-sm text-yellow-800">
+                  <p className="font-semibold mb-1">No test results found</p>
+                  <p className="text-yellow-700">
+                    Tests were generated but could not be run. This usually means Jest is not installed in the repo.
+                    Install Jest globally: <code className="bg-yellow-100 px-1 rounded">npm install -g jest</code> then run again.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 {selectedRun.results.map((test) => (
                   <div key={test.id} className="bg-white border rounded-xl overflow-hidden">
