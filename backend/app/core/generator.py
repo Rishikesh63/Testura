@@ -38,16 +38,21 @@ Rules:
 - Focus ONLY on pure logic: math, string manipulation, array operations, object transformations
 - SKIP any function that does network calls, database queries, DOM access, or file I/O
 
-For JavaScript/TypeScript files:
-- Output CommonJS JavaScript (.js), NOT TypeScript
-- NO import, require, or mock of any source files — fully self-contained only
-- Define every function you test INLINE inside the describe block
+For JavaScript files (.js source):
+- Output CommonJS JavaScript (.js)
+- You MAY require() the source file: const { myFn } = require('../path/to/source')
+- Dependencies are pre-installed so require() will work
+- Test the ACTUAL exported functions from the source file
 - Use ONLY: describe, it, expect, jest.fn()
 - Use toThrow() NOT toThrowError() (toThrowError was removed in Jest 29)
-- NO async/await unless the function itself is async and you control it
+
+For TypeScript files (.ts/.tsx source):
+- Output CommonJS JavaScript (.js), NOT TypeScript
+- Do NOT require() or import TypeScript files — no transform is available
+- Define every function you test INLINE inside the describe block
 - Your inline implementation must be consistent with your assertions — you control both
 
-Correct pattern:
+Correct pattern for inline (TypeScript source):
 describe('formatPrice', () => {
   const formatPrice = (n) => '$' + n.toFixed(2);
   it('formats integer', () => { expect(formatPrice(10)).toBe('$10.00'); });
@@ -55,11 +60,10 @@ describe('formatPrice', () => {
   it('formats zero', () => { expect(formatPrice(0)).toBe('$0.00'); });
 });
 
-describe('clamp', () => {
-  const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
-  it('returns value within range', () => { expect(clamp(5, 0, 10)).toBe(5); });
-  it('clamps to min', () => { expect(clamp(-1, 0, 10)).toBe(0); });
-  it('clamps to max', () => { expect(clamp(15, 0, 10)).toBe(10); });
+Correct pattern for require (JavaScript source):
+const { formatPrice } = require('../src/utils');
+describe('formatPrice', () => {
+  it('formats integer', () => { expect(formatPrice(10)).toBe('$10.00'); });
 });
 
 For Python files:

@@ -57,7 +57,25 @@ def _write_jest_config(repo_path: str) -> None:
         )
 
 
+def _npm_install(repo_path: str) -> None:
+    if not (Path(repo_path) / "package.json").exists():
+        return
+    try:
+        proc = subprocess.run(
+            "npm install --legacy-peer-deps --prefer-offline",
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            shell=True,
+        )
+        logger.info("=== npm install returncode: %d", proc.returncode)
+    except subprocess.TimeoutExpired:
+        logger.warning("npm install timed out, continuing anyway")
+
+
 def _run_jest(repo_path: str) -> dict[str, Any]:
+    _npm_install(repo_path)
     _write_jest_config(repo_path)
 
     jest_local = Path(repo_path) / "node_modules" / ".bin" / "jest"
