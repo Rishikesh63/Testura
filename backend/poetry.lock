@@ -2450,6 +2450,20 @@ files = [
 ]
 
 [[package]]
+name = "razorpay"
+version = "1.4.2"
+description = "Razorpay Python Client"
+optional = false
+python-versions = "*"
+files = [
+    {file = "razorpay-1.4.2-py3-none-any.whl", hash = "sha256:aaf525baebc5001e5c54ae317a372c3c17c81314cedcbbf71aa0a2d3419a9757"},
+    {file = "razorpay-1.4.2.tar.gz", hash = "sha256:0d812030ba29e776e66d1ceaacc31635810fde18b66ff2591e582eb651bb5131"},
+]
+
+[package.dependencies]
+requests = "*"
+
+[[package]]
 name = "realtime"
 version = "2.30.0"
 description = ""
@@ -2661,21 +2675,6 @@ files = [
 
 [package.dependencies]
 python-dateutil = ">=2.6.0"
-
-[[package]]
-name = "stripe"
-version = "10.12.0"
-description = "Python bindings for the Stripe API"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "stripe-10.12.0-py2.py3-none-any.whl", hash = "sha256:0c79c1f3a844533c8d30cc283b43afb622aaa402539fca19167a9004fea3471c"},
-    {file = "stripe-10.12.0.tar.gz", hash = "sha256:5abec44548d3814bc1e070aa1852bcb3fc5cc029e947c0f733156eb1f8c87030"},
-]
-
-[package.dependencies]
-requests = {version = ">=2.20", markers = "python_version >= \"3.0\""}
-typing-extensions = {version = ">=4.5.0", markers = "python_version >= \"3.7\""}
 
 [[package]]
 name = "supabase"
@@ -3449,4 +3448,4 @@ cffi = ["cffi (>=1.17,<2.0)", "cffi (>=2.0.0b)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "f5f22c7f45f6b6430f78855b6b2a424ad12530ab987d3a932dd9524a3f12111e"
+content-hash = "77429c7f3cb289b912d7b0bfd28c20df5c06246690dd001a1fa3064d6539d0a0"

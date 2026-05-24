@@ -1,9 +1,21 @@
 "use client";
 
-import { signInWithGitHub } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
+import { signInWithGitHub, getSupabase } from "@/lib/supabase";
 import { Github, Zap, ShieldCheck, BarChart3, ArrowRight, CheckCircle } from "lucide-react";
 
 export default function LandingPage() {
+  const router = useRouter();
+
+  async function handlePricingCta(planId: string) {
+    const { data } = await getSupabase().auth.getSession();
+    if (data.session) {
+      router.push(planId === "free" ? "/dashboard" : "/billing");
+    } else {
+      signInWithGitHub();
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
@@ -126,10 +138,10 @@ export default function LandingPage() {
         <p className="text-center text-gray-500 mb-16">Start free. Upgrade when you need more.</p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[
-            { name: "Free", price: "$0", features: ["1 repo", "50 tests/mo", "Dashboard access"], cta: "Get started", highlight: false },
-            { name: "Starter", price: "$29", features: ["3 repos", "500 tests/mo", "Email alerts", "GitHub Action"], cta: "Start free trial", highlight: false },
-            { name: "Pro", price: "$79", features: ["10 repos", "Unlimited tests", "Slack alerts", "Priority support"], cta: "Start free trial", highlight: true },
-            { name: "Team", price: "$149", features: ["Unlimited repos", "CI/CD integration", "Team dashboard", "Custom alerts"], cta: "Contact us", highlight: false },
+            { id: "free",    name: "Free",    price: "₹0",      features: ["1 repo", "50 tests/mo", "Dashboard access"], cta: "Get started",       highlight: false },
+            { id: "starter", name: "Starter", price: "₹999",    features: ["3 repos", "500 tests/mo", "Email alerts"],    cta: "Upgrade to Starter", highlight: false },
+            { id: "pro",     name: "Pro",     price: "₹2,499",  features: ["10 repos", "Unlimited tests", "Priority support"], cta: "Upgrade to Pro", highlight: true },
+            { id: "team",    name: "Team",    price: "₹4,999",  features: ["Unlimited repos", "CI/CD integration", "Team dashboard"], cta: "Contact us", highlight: false },
           ].map((plan) => (
             <div
               key={plan.name}
@@ -145,7 +157,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <button
-                onClick={signInWithGitHub}
+                onClick={() => handlePricingCta(plan.id)}
                 className={`mt-6 py-2 rounded-lg text-sm font-medium ${plan.highlight ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-900 text-white hover:bg-gray-700"}`}
               >
                 {plan.cta}
