@@ -101,12 +101,20 @@ export default function Dashboard() {
           <Zap className="text-blue-600" size={20} />
           Testura
         </div>
-        <button
-          onClick={() => signOut().then(() => router.push("/"))}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800"
-        >
-          <LogOut size={16} /> Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/billing")}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Upgrade
+          </button>
+          <button
+            onClick={() => signOut().then(() => router.push("/"))}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800"
+          >
+            <LogOut size={16} /> Sign out
+          </button>
+        </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-10">

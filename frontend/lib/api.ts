@@ -27,4 +27,17 @@ export const testApi = {
     api.get(`/repos/${repoId}/runs/${runId}`),
 };
 
+export const billingApi = {
+  createOrder: (plan: string, userId: string) =>
+    api.post("/billing/create-order", { plan, user_id: userId }),
+  verify: (data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    plan: string;
+    user_id: string;
+  }) => api.post("/billing/verify", data),
+  getPlan: (userId: string) => api.get(`/billing/plan/${userId}`),
+};
+
 export default api;
