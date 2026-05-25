@@ -131,3 +131,34 @@ In 2-3 sentences, explain why this test failed and what change would fix it."""
         messages=[{"role": "user", "content": prompt}],
     )
     return response.choices[0].message.content.strip()
+
+
+def fix_failing_tests(test_content: str, error_messages: list) -> str:
+    errors_text = "\n---\n".join(str(e) for e in error_messages[:5])
+    prompt = f"""This test file has failing tests. Fix them.
+
+Test file:
+```javascript
+{test_content[:2000]}
+```
+
+Errors from failing tests:
+{errors_text[:1000]}
+
+Rules:
+- Return ONLY the complete fixed test file, no explanation, no markdown fences
+- Keep passing tests exactly as they are
+- Fix failing tests: correct the inline function implementation to match the assertion
+- If a test uses a removed API (e.g. toThrowError), replace with toThrow()
+- Remove any test that requires external imports or cannot be fixed inline"""
+
+    response = _get_client().chat.completions.create(
+        model=_model(),
+        max_tokens=2048,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = response.choices[0].message.content.strip()
+    if raw.startswith("```"):
+        lines = raw.split("\n")
+        raw = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
+    return raw

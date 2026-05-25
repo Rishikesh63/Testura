@@ -1,8 +1,11 @@
 import shutil
 import stat
+import logging
 from pathlib import Path
 import git
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _force_remove_readonly(func, path, _):
@@ -13,8 +16,16 @@ def _force_remove_readonly(func, path, _):
 
 def clone_repo(repo_url: str, repo_id: str) -> str:
     dest = Path(settings.repos_base_path) / repo_id
+    # Pull if already cloned — saves 10-30s per run
     if dest.exists():
-        shutil.rmtree(dest, onerror=_force_remove_readonly)
+        try:
+            repo = git.Repo(str(dest))
+            repo.git.pull("--depth=1")
+            logger.info("Pulled latest for %s", repo_id)
+            return str(dest)
+        except Exception as e:
+            logger.warning("Pull failed (%s), re-cloning", e)
+            shutil.rmtree(dest, onerror=_force_remove_readonly)
     dest.parent.mkdir(parents=True, exist_ok=True)
     git.Repo.clone_from(repo_url, str(dest), depth=1)
     return str(dest)

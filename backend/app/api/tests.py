@@ -2,7 +2,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.core.analyzer import analyze_repo
-from app.core.generator import generate_tests_for_file, generate_fix_suggestion
+from app.core.generator import generate_tests_for_file, generate_fix_suggestion, fix_failing_tests
 from app.core.runner import run_tests
 from app.services.github import clone_repo, detect_language
 from app.core.config import settings
@@ -59,7 +59,7 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
                 logger.warning("Failed to generate tests for %s: %s", file_info["path"], e)
             return None
 
-        candidate_files = [f for f in analysis["files"][:5] if f.get("symbols")]
+        candidate_files = _select_best_files(analysis["files"], n=5)
         test_files = []
         with ThreadPoolExecutor(max_workers=5) as pool:
             futures = {pool.submit(_gen, fi): fi for fi in candidate_files}
@@ -76,6 +76,10 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
 
         result = run_tests(repo_path, test_files, language)
         logger.info("=== JEST RESULTS COUNT: %d", len(result.get("results", [])))
+
+        # Multi-turn: fix failing tests and re-run once
+        if result.get("tests_failed", 0) > 0:
+            result = _fix_and_rerun(repo_path, test_files, result, language)
 
         # Generate fix suggestions in parallel
         def _fix(r):
@@ -140,5 +144,53 @@ def _test_path(source_path: str, language: str) -> str:
     p = Path(source_path)
     if language == "python":
         return str(p.parent / f"test_{p.stem}.py")
-    # Always .test.js (not .ts) — avoids needing TypeScript/babel transforms
     return str(p.parent / f"{p.stem}.test.js")
+
+
+def _score_file(file_info: dict) -> int:
+    path = file_info["path"].lower().replace("\\", "/")
+    score = len(file_info.get("symbols", []))  # more symbols = higher priority
+
+    # Boost pure-logic directories
+    for boost in ["util", "helper", "lib/", "hook", "service", "store", "format", "parse", "calc", "math", "common"]:
+        if boost in path:
+            score += 10
+
+    # Penalise hard-to-test files
+    for penalty in ["component", "page", "layout", "middleware", "config", "index.", "types.", ".d.ts", "test", "spec", "mock", "fixture"]:
+        if penalty in path:
+            score -= 20
+
+    return score
+
+
+def _select_best_files(files: list, n: int = 5) -> list:
+    with_symbols = [f for f in files if f.get("symbols")]
+    return sorted(with_symbols, key=_score_file, reverse=True)[:n]
+
+
+def _fix_and_rerun(repo_path: str, test_files: list, first_result: dict, language: str) -> dict:
+    # Collect errors per test file
+    errors_by_file: dict = {}
+    for r in first_result.get("results", []):
+        if r.get("error_message"):
+            errors_by_file.setdefault(r["file"], []).append(r["error_message"])
+
+    fixed_any = False
+    for tf in test_files:
+        tf_name = Path(tf["path"]).name
+        if tf_name in errors_by_file:
+            try:
+                fixed = fix_failing_tests(tf["content"], errors_by_file[tf_name])
+                if fixed and fixed != tf["content"]:
+                    tf["content"] = fixed
+                    fixed_any = True
+                    logger.info("Fixed failing tests in %s", tf_name)
+            except Exception as e:
+                logger.warning("Could not fix %s: %s", tf_name, e)
+
+    if not fixed_any:
+        return first_result
+
+    logger.info("Re-running tests after multi-turn fix")
+    return run_tests(repo_path, test_files, language)
