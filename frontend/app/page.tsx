@@ -1,11 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { signInWithGitHub, getSupabase } from "@/lib/supabase";
 import { Github, Zap, ShieldCheck, BarChart3, ArrowRight, CheckCircle } from "lucide-react";
 
 export default function LandingPage() {
   const router = useRouter();
+  const [stats, setStats] = useState({ repos: 0, tests_run: 0, avg_pass_rate: 0, highest_pass_rate: 0 });
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/stats`)
+      .then((r) => r.json())
+      .then((d) => setStats(d))
+      .catch(() => {});
+  }, []);
 
   async function handlePricingCta(planId: string) {
     const { data } = await getSupabase().auth.getSession();
@@ -59,17 +68,24 @@ export default function LandingPage() {
         <p className="text-sm text-gray-400 mt-4">No credit card. Free tier includes 1 repo + 50 tests/month.</p>
       </section>
 
-      {/* Social proof */}
-      <section className="bg-gray-50 py-10">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-sm text-gray-500 mb-6">Built for developers using</p>
-          <div className="flex items-center justify-center gap-10 text-gray-400 font-semibold text-lg">
-            <span>Cursor</span>
-            <span>Lovable</span>
-            <span>Bolt</span>
-            <span>v0</span>
-            <span>Replit</span>
+      {/* Live stats */}
+      <section className="bg-gray-50 py-14 border-y">
+        <div className="max-w-4xl mx-auto px-6">
+          <p className="text-center text-sm text-gray-400 uppercase tracking-widest mb-8">Live platform stats</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { value: stats.repos > 0 ? stats.repos.toLocaleString() : "—", label: "Repos analyzed" },
+              { value: stats.tests_run > 0 ? stats.tests_run.toLocaleString() : "—", label: "Tests run" },
+              { value: stats.avg_pass_rate > 0 ? `${stats.avg_pass_rate}%` : "—", label: "Average pass rate" },
+              { value: stats.highest_pass_rate > 0 ? `${stats.highest_pass_rate}%` : "—", label: "Highest pass rate" },
+            ].map((s) => (
+              <div key={s.label} className="bg-white rounded-2xl border p-6">
+                <div className="text-4xl font-bold text-blue-600 mb-1">{s.value}</div>
+                <div className="text-sm text-gray-500">{s.label}</div>
+              </div>
+            ))}
           </div>
+          <p className="text-center text-xs text-gray-400 mt-6">Built for developers using Cursor · Lovable · Bolt · v0 · Replit</p>
         </div>
       </section>
 
