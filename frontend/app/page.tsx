@@ -7,7 +7,7 @@ import { Github, Zap, ShieldCheck, BarChart3, ArrowRight, CheckCircle } from "lu
 
 export default function LandingPage() {
   const router = useRouter();
-  const [stats, setStats] = useState({ repos: 0, tests_run: 0, avg_pass_rate: 0, highest_pass_rate: 0 });
+  const [stats, setStats] = useState({ repos: 0, tests_run: 0, highest_pass_rate: 0 });
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/stats`)
@@ -72,11 +72,10 @@ export default function LandingPage() {
       <section className="bg-gray-50 py-14 border-y">
         <div className="max-w-4xl mx-auto px-6">
           <p className="text-center text-sm text-gray-400 uppercase tracking-widest mb-8">Live platform stats</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div className="grid grid-cols-3 gap-6 text-center">
             {[
               { value: stats.repos > 0 ? stats.repos.toLocaleString() : "—", label: "Repos analyzed" },
               { value: stats.tests_run > 0 ? stats.tests_run.toLocaleString() : "—", label: "Tests run" },
-              { value: stats.avg_pass_rate > 0 ? `${stats.avg_pass_rate}%` : "—", label: "Average pass rate" },
               { value: stats.highest_pass_rate > 0 ? `${stats.highest_pass_rate}%` : "—", label: "Highest pass rate" },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-2xl border p-6">
