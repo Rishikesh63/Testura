@@ -7,7 +7,12 @@ import { Github, Zap, ShieldCheck, BarChart3, ArrowRight, CheckCircle } from "lu
 
 export default function LandingPage() {
   const router = useRouter();
-  const [stats, setStats] = useState({ repos: 0, tests_run: 0, highest_pass_rate: 0 });
+  const [stats, setStats] = useState<{
+    repos: number;
+    tests_run: number;
+    highest_pass_rate: number;
+    top_repo: { full_name: string; repo_url: string; pass_rate: number; tests_passed: number; tests_total: number } | null;
+  }>({ repos: 0, tests_run: 0, highest_pass_rate: 0, top_repo: null });
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/stats`)
@@ -84,6 +89,30 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          {/* Top performing repo card */}
+          {stats.top_repo && (
+            <div className="mt-8 max-w-md mx-auto bg-white border-2 border-green-200 rounded-2xl p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                <span className="text-green-600 font-bold text-sm">{stats.top_repo.pass_rate}%</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-gray-400 mb-0.5">🏆 Highest passing repo</div>
+                <a
+                  href={stats.top_repo.repo_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-gray-900 hover:text-blue-600 truncate block"
+                >
+                  {stats.top_repo.full_name}
+                </a>
+                <div className="text-xs text-gray-400 mt-0.5">
+                  {stats.top_repo.tests_passed} / {stats.top_repo.tests_total} tests passing
+                </div>
+              </div>
+              <CheckCircle size={20} className="text-green-500 shrink-0" />
+            </div>
+          )}
+
           <p className="text-center text-xs text-gray-400 mt-6">Built for developers using Cursor · Lovable · Bolt · v0 · Replit</p>
         </div>
       </section>

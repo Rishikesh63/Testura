@@ -36,7 +36,8 @@ async def health():
 async def stats():
     from supabase import create_client
     sb = create_client(settings.supabase_url, settings.supabase_service_key)
-    repos = sb.table("repos").select("id").execute()
+    repos_res = sb.table("repos").select("id,full_name,repo_url,tests_passed,tests_total").execute()
+    repo_data = repos_res.data or []
     runs = sb.table("test_runs").select("tests_passed,tests_total").neq("tests_total", 0).execute()
     run_data = runs.data or []
     highest_pass_rate = max(
@@ -44,8 +45,26 @@ async def stats():
         default=0,
     )
     total_run = sum(r["tests_total"] for r in run_data)
+
+    # Find repo with highest pass rate
+    top_repo = None
+    best = -1
+    for r in repo_data:
+        if r["tests_total"] and r["tests_total"] > 0:
+            rate = round(r["tests_passed"] / r["tests_total"] * 100)
+            if rate > best:
+                best = rate
+                top_repo = {
+                    "full_name": r["full_name"],
+                    "repo_url": r["repo_url"],
+                    "pass_rate": rate,
+                    "tests_passed": r["tests_passed"],
+                    "tests_total": r["tests_total"],
+                }
+
     return {
-        "repos": len(repos.data or []),
+        "repos": len(repo_data),
         "tests_run": total_run,
         "highest_pass_rate": highest_pass_rate,
+        "top_repo": top_repo,
     }
