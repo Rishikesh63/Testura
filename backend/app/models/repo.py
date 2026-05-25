@@ -5,6 +5,7 @@ from datetime import datetime
 
 class RepoConnect(BaseModel):
     repo_url: str
+    github_token: Optional[str] = None
 
 
 class RepoOut(BaseModel):

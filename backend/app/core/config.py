@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     nvidia_api_key: Optional[str] = None
     github_client_id: Optional[str] = None
     github_client_secret: Optional[str] = None
-    razorpay_key_id: Optional[str] = None
-    razorpay_key_secret: Optional[str] = None
+    github_webhook_secret: Optional[str] = None
+    razorpay_key_id: str
+    razorpay_key_secret: str
     redis_url: str = "redis://localhost:6379/0"
     repos_base_path: str = "C:/tmp/repos"
     allowed_origins: str = "http://localhost:3000"

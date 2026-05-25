@@ -52,8 +52,10 @@ export default function Dashboard() {
     if (!repoUrl.trim()) return;
     setConnecting(true);
     try {
-      await repoApi.connect(repoUrl.trim());
-      toast.success("Repo connected successfully");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const githubToken = (sessionData.session as any)?.provider_token;
+      await repoApi.connect(repoUrl.trim(), githubToken);
+      toast.success("Repo connected — webhook auto-configured ✓");
       setRepoUrl("");
       fetchRepos();
     } catch (e: any) {

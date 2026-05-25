@@ -1,11 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends
+import uuid
+import re
+import logging
+import httpx
+from fastapi import APIRouter, HTTPException
 from app.models.repo import RepoConnect, RepoOut
 from app.services.github import clone_repo, detect_language, cleanup_repo
 from app.core.analyzer import analyze_repo
 from app.core.config import settings
 from supabase import create_client
-import uuid
-import re
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/repos", tags=["repos"])
 
@@ -51,7 +55,36 @@ async def connect_repo(body: RepoConnect):
         "tests_total": 0,
     }
     supabase.table("repos").insert(data).execute()
+
+    # Auto-create GitHub webhook so tests run on every push
+    if body.github_token and settings.github_webhook_secret:
+        await _create_github_webhook(full_name, body.github_token)
+
     return data
+
+
+async def _create_github_webhook(full_name: str, token: str) -> None:
+    url = f"https://api.github.com/repos/{full_name}/hooks"
+    payload = {
+        "name": "web",
+        "active": True,
+        "events": ["push"],
+        "config": {
+            "url": f"https://testura-backend.fly.dev/webhooks/github",
+            "content_type": "json",
+            "secret": settings.github_webhook_secret,
+        },
+    }
+    async with httpx.AsyncClient() as client:
+        res = await client.post(
+            url,
+            json=payload,
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        )
+    if res.status_code in (201, 422):  # 422 = webhook already exists
+        logger.info("Webhook set up for %s (status %d)", full_name, res.status_code)
+    else:
+        logger.warning("Failed to create webhook for %s: %d %s", full_name, res.status_code, res.text)
 
 
 @router.get("/{repo_id}")

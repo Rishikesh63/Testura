@@ -15,7 +15,8 @@ api.interceptors.request.use(async (config) => {
 
 export const repoApi = {
   list: () => api.get("/repos"),
-  connect: (repoUrl: string) => api.post("/repos", { repo_url: repoUrl }),
+  connect: (repoUrl: string, githubToken?: string) =>
+    api.post("/repos", { repo_url: repoUrl, github_token: githubToken }),
   get: (id: string) => api.get(`/repos/${id}`),
   delete: (id: string) => api.delete(`/repos/${id}`),
 };
