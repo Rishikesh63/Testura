@@ -146,10 +146,25 @@ export default function Dashboard() {
         {loading ? (
           <div className="text-center py-20 text-gray-400">Loading...</div>
         ) : repos.length === 0 ? (
-          <div className="text-center py-20">
-            <Github size={40} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500">No repos connected yet.</p>
-            <p className="text-gray-400 text-sm">Paste a GitHub URL above to get started.</p>
+          <div className="bg-white border rounded-xl p-10 text-center">
+            <Zap size={40} className="mx-auto text-blue-400 mb-4" />
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Connect your first repo</h2>
+            <p className="text-gray-400 text-sm mb-8">Testura will analyze your code, generate tests, and run them automatically.</p>
+            <div className="flex justify-center gap-8 text-left max-w-lg mx-auto">
+              {[
+                { step: "1", title: "Paste GitHub URL", desc: "Any public or private repo" },
+                { step: "2", title: "AI generates tests", desc: "Reads your code in seconds" },
+                { step: "3", title: "See results", desc: "Pass rate, errors, fix hints" },
+              ].map((s) => (
+                <div key={s.step} className="flex gap-3">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold shrink-0">{s.step}</div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-800">{s.title}</div>
+                    <div className="text-xs text-gray-400">{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

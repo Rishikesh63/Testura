@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.core.analyzer import analyze_repo
 from app.core.generator import generate_tests_for_file, generate_fix_suggestion
@@ -47,15 +48,26 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
         analysis = analyze_repo(repo_path)
         logger.info("Analysis: %d files with symbols", len(analysis["files"]))
 
-        # Generate tests for each file
+        # Generate tests in parallel (5x faster than sequential)
+        def _gen(file_info):
+            try:
+                source = Path(repo_path, file_info["path"]).read_text(encoding="utf-8", errors="ignore")
+                content = generate_tests_for_file(file_info, source)
+                if content:
+                    return {"path": _test_path(file_info["path"], language), "content": content}
+            except Exception as e:
+                logger.warning("Failed to generate tests for %s: %s", file_info["path"], e)
+            return None
+
+        candidate_files = [f for f in analysis["files"][:5] if f.get("symbols")]
         test_files = []
-        for file_info in analysis["files"][:5]:  # cap at 5 files to conserve API tokens
-            logger.info("Generating tests for %s (%d symbols)", file_info["path"], len(file_info["symbols"]))
-            source = Path(repo_path, file_info["path"]).read_text(encoding="utf-8", errors="ignore")
-            test_content = generate_tests_for_file(file_info, source)
-            if test_content:
-                test_path = _test_path(file_info["path"], language)
-                test_files.append({"path": test_path, "content": test_content})
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            futures = {pool.submit(_gen, fi): fi for fi in candidate_files}
+            for future in as_completed(futures):
+                result_file = future.result()
+                if result_file:
+                    test_files.append(result_file)
+                    logger.info("Generated tests for %s", futures[future]["path"])
 
         logger.info("Generated %d test files", len(test_files))
         if not test_files:
@@ -63,12 +75,10 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
             return
 
         result = run_tests(repo_path, test_files, language)
-        logger.info("=== JEST STDOUT: %s", result.get("raw_output", "")[:800])
         logger.info("=== JEST RESULTS COUNT: %d", len(result.get("results", [])))
 
-        # Generate fix suggestions for failed tests
-        enriched = []
-        for r in result["results"]:
+        # Generate fix suggestions in parallel
+        def _fix(r):
             if r.get("error_message"):
                 try:
                     src_path = Path(repo_path, r["file"])
@@ -76,7 +86,11 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
                     r["fix_suggestion"] = generate_fix_suggestion(r["name"], r["error_message"], snippet)
                 except Exception:
                     pass
-            enriched.append(r)
+            return r
+
+        enriched = []
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            enriched = list(pool.map(_fix, result["results"]))
 
         duration = int((time.time() - start) * 1000)
         status = "passed" if result["tests_total"] > 0 and result["tests_failed"] == 0 else "failed"

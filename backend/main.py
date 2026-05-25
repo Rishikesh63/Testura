@@ -1,7 +1,7 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import repos, tests, webhooks, billing
+from app.api import repos, tests, webhooks, billing, badge
 from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
@@ -24,6 +24,7 @@ app.include_router(repos.router)
 app.include_router(tests.router)
 app.include_router(webhooks.router)
 app.include_router(billing.router)
+app.include_router(badge.router)
 
 
 @app.get("/health")

@@ -9,6 +9,7 @@ import {
   ArrowLeft, Play, RefreshCw, CheckCircle,
   XCircle, AlertCircle, ChevronDown, ChevronUp, Zap,
 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 
 type TestResult = {
@@ -104,6 +105,16 @@ export default function RepoDetail() {
             {repo?.full_name}
           </div>
         </div>
+        {repo && (
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL}/badge/${repo.full_name}`}
+            target="_blank"
+            className="text-xs text-gray-400 hover:text-gray-600 border rounded px-2 py-1"
+            title="Copy badge URL for your README"
+          >
+            🏷 Badge
+          </a>
+        )}
         <button
           onClick={runTests}
           disabled={running}
@@ -168,6 +179,24 @@ export default function RepoDetail() {
                   </div>
                 ))}
               </div>
+
+              {/* Pass rate trend chart */}
+              {runs.length > 1 && (
+                <div className="bg-white border rounded-xl p-4 mb-6">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Pass Rate Trend</div>
+                  <ResponsiveContainer width="100%" height={80}>
+                    <AreaChart data={[...runs].reverse().map((r, i) => ({
+                      run: `#${i + 1}`,
+                      rate: r.tests_total > 0 ? Math.round(r.tests_passed / r.tests_total * 100) : 0,
+                    }))}>
+                      <XAxis dataKey="run" tick={{ fontSize: 10 }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} unit="%" width={32} />
+                      <Tooltip formatter={(v) => [`${v}%`, "Pass rate"]} />
+                      <Area type="monotone" dataKey="rate" stroke="#2563eb" fill="#eff6ff" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
 
               {/* Test results list */}
               {selectedRun.results.length === 0 && (
