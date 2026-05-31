@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.core.analyzer import analyze_repo
 from app.core.generator import generate_tests_for_file, generate_fix_suggestion, fix_failing_tests
+from app.services.email import send_test_failure_email
 from app.core.runner import run_tests
 from app.services.github import clone_repo, detect_language
 from app.core.config import settings
@@ -101,6 +102,20 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
         _mark_run(run_id, repo_id, status,
                   result["tests_passed"], result["tests_failed"],
                   result["tests_total"], duration, enriched)
+
+        # Email notification on failure
+        if status == "failed" and result["tests_total"] > 0:
+            try:
+                user_res = supabase.table("repos").select("user_email").eq("id", repo_id).maybe_single().execute()
+                to_email = (user_res.data or {}).get("user_email")
+                if to_email:
+                    import asyncio
+                    asyncio.create_task(send_test_failure_email(
+                        to_email, repo_data.get("full_name", repo_id), run_id,
+                        result["tests_passed"], result["tests_failed"], result["tests_total"],
+                    ))
+            except Exception as e:
+                logger.warning("Could not send failure email: %s", e)
 
     except Exception as e:
         logger.error("Pipeline failed for run %s: %s", run_id, e, exc_info=True)

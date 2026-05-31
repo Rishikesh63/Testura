@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     github_webhook_secret: Optional[str] = None
     razorpay_key_id: str
     razorpay_key_secret: str
+    postmark_api_key: Optional[str] = None
+    from_email: str = "noreply@testura.dev"
+    from_name: str = "Testura"
     redis_url: str = "redis://localhost:6379/0"
     repos_base_path: str = "C:/tmp/repos"
     allowed_origins: str = "http://localhost:3000"
