@@ -1,6 +1,7 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from app.api.repos import get_current_user
 from app.core.analyzer import analyze_repo
 from app.core.generator import generate_tests_for_file, generate_fix_suggestion, fix_failing_tests
 from app.services.email import send_test_failure_email
@@ -20,8 +21,8 @@ supabase = create_client(settings.supabase_url, settings.supabase_service_key)
 
 
 @router.post("/{repo_id}/runs")
-async def start_run(repo_id: str, background_tasks: BackgroundTasks):
-    res = supabase.table("repos").select("*").eq("id", repo_id).single().execute()
+async def start_run(repo_id: str, background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
+    res = supabase.table("repos").select("*").eq("id", repo_id).eq("user_id", user_id).single().execute()
     if not res.data:
         raise HTTPException(404, "Repo not found")
 
@@ -107,13 +108,12 @@ async def _run_pipeline(repo_id: str, run_id: str, repo_data: dict):
         if status == "failed" and result["tests_total"] > 0:
             try:
                 user_res = supabase.table("repos").select("user_email").eq("id", repo_id).maybe_single().execute()
-                to_email = (user_res.data or {}).get("user_email")
+                to_email = (user_res.data or {}).get("user_email") or settings.admin_email
                 if to_email:
-                    import asyncio
-                    asyncio.create_task(send_test_failure_email(
+                    await send_test_failure_email(
                         to_email, repo_data.get("full_name", repo_id), run_id,
                         result["tests_passed"], result["tests_failed"], result["tests_total"],
-                    ))
+                    )
             except Exception as e:
                 logger.warning("Could not send failure email: %s", e)
 
@@ -142,7 +142,11 @@ def _mark_run(run_id, repo_id, status, passed, failed, total, duration_ms, resul
 
 
 @router.get("/{repo_id}/runs")
-async def list_runs(repo_id: str):
+async def list_runs(repo_id: str, user_id: str = Depends(get_current_user)):
+    # Verify repo belongs to user
+    repo = supabase.table("repos").select("id").eq("id", repo_id).eq("user_id", user_id).single().execute()
+    if not repo.data:
+        raise HTTPException(404, "Repo not found")
     res = supabase.table("test_runs").select("*").eq("repo_id", repo_id).order("created_at", desc=True).execute()
     return {"runs": res.data}
 
@@ -169,12 +173,12 @@ def _score_file(file_info: dict) -> int:
     # Boost pure-logic directories
     for boost in ["util", "helper", "lib/", "hook", "service", "store", "format", "parse", "calc", "math", "common"]:
         if boost in path:
-            score += 10
+            score += 8
 
-    # Penalise hard-to-test files
-    for penalty in ["component", "page", "layout", "middleware", "config", "index.", "types.", ".d.ts", "test", "spec", "mock", "fixture"]:
+    # Lightly penalise hard-to-test files (don't exclude them entirely)
+    for penalty in ["types.", ".d.ts", "test", "spec", "mock", "fixture"]:
         if penalty in path:
-            score -= 20
+            score -= 15
 
     return score
 

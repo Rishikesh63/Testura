@@ -54,7 +54,8 @@ export default function Dashboard() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const githubToken = (sessionData.session as any)?.provider_token;
-      await repoApi.connect(repoUrl.trim(), githubToken);
+      const userEmail = sessionData.session?.user?.email;
+      await repoApi.connect(repoUrl.trim(), githubToken, userEmail);
       toast.success("Repo connected — webhook auto-configured ✓");
       setRepoUrl("");
       fetchRepos();

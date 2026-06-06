@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     postmark_api_key: Optional[str] = None
     from_email: str = "noreply@testura.dev"
     from_name: str = "Testura"
+    admin_email: Optional[str] = None
     redis_url: str = "redis://localhost:6379/0"
     repos_base_path: str = "C:/tmp/repos"
     allowed_origins: str = "http://localhost:3000"
