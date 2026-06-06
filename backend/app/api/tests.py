@@ -152,8 +152,11 @@ async def list_runs(repo_id: str, user_id: str = Depends(get_current_user)):
 
 
 @router.get("/{repo_id}/runs/{run_id}")
-async def get_run(repo_id: str, run_id: str):
-    res = supabase.table("test_runs").select("*").eq("id", run_id).single().execute()
+async def get_run(repo_id: str, run_id: str, user_id: str = Depends(get_current_user)):
+    repo = supabase.table("repos").select("id").eq("id", repo_id).eq("user_id", user_id).single().execute()
+    if not repo.data:
+        raise HTTPException(404, "Repo not found")
+    res = supabase.table("test_runs").select("*").eq("id", run_id).eq("repo_id", repo_id).single().execute()
     if not res.data:
         raise HTTPException(404, "Run not found")
     return res.data
